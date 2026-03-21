@@ -100,6 +100,41 @@ app.post("org-login",(req,res)=>{
     });
 })
 
+app.post("new-org",(req,res)=>{
+    const email = req.email;
+    const orgname = req.body.orgname;
+    const existingorg = Organisation.find(org => org.name === orgname);
+    if(existingorg)
+    {
+        res.status(400).send("Organization already exists");
+        return;
+    }
+
+    const neworg = {
+        id:new Date().toString(),
+        name:orgname,
+        user:[email]
+    };
+
+    Organisation.push(neworg);
+
+    res.status(201).send({
+        message:"Organization created successfully",
+        org:neworg
+    });
+});
+
+app.post("added-member",(req,res)=>{
+    const {memberemail,orgid} = req.body;
+
+    const idx = Organisation.findIndex(org => org.id === orgid);
+    Organisation[idx].user.push(memberemail);
+
+    res.status(201).send({
+        message:"added user to org"
+    })
+});
+
 
 
 // --------------------- Task apis --------------------------------
