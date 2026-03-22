@@ -107,7 +107,7 @@
 <body>
     <div class="container">
         <h2>SignIn Form</h2>
-        <form id="signupForm">
+        <form id="signinForm">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" required>
@@ -129,60 +129,53 @@
         <p id="message"></p>
     </div>
     <script>
+        const API_BASE =
+            window.location.protocol === "file:"
+                ? "http://localhost:4000"
+                : "";
 
-        async function signup()
-        {
-            const email = document.getElementById("email").value;
+        async function signIn() {
+            const message = document.getElementById("message");
+            message.textContent = "";
+            message.classList.remove("error");
+
+            const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
 
-            const responce = await axios.post("http://localhost:4000/signin",{
-                email,password
-            });
+            try {
+                const res = await axios.post(`${API_BASE}/signin`, {
+                    email,
+                    password,
+                });
 
-            console.log(responce);
+                const data = res.data;
+                localStorage.setItem(
+                    "trello_session",
+                    JSON.stringify({
+                        email,
+                        orgs: data.org || [],
+                        orglength: data.orglength ?? 0,
+                    })
+                );
+                localStorage.removeItem("trello_token");
+                localStorage.removeItem("trello_org_id");
 
-            if(responce.orglength === 0)
-            {
-                window.location("/neworg")
-
+                window.location.href = `${API_BASE || window.location.origin}/`;
+            } catch (err) {
+                const text =
+                    err.response?.data != null
+                        ? typeof err.response.data === "string"
+                            ? err.response.data
+                            : JSON.stringify(err.response.data)
+                        : err.message || "Sign in failed";
+                message.textContent = text;
+                message.classList.add("error");
             }
-            else{
-                window.location("/dashboard")
-            }
-
-
-
         }
 
-        document.getElementById('signupForm').addEventListener('submit', function (event) {
+        document.getElementById("signinForm").addEventListener("submit", function (event) {
             event.preventDefault();
-
-            let email = document.getElementById('email').value;
-            let password = document.getElementById('password').value;
-            let confirmPassword = document.getElementById('confirmPassword').value;
-            let message = document.getElementById('message');
-            let passwordError = document.getElementById('passwordError');
-            let confirmPasswordError = document.getElementById('confirmPasswordError');
-
-            // let passwordValid = validatePassword(password);
-            // if (!passwordValid) {
-            //     passwordError.textContent = 'Password does not meet the requirements.';
-            //     return;
-            // } else {
-            //     passwordError.textContent = '';
-            // }
-
-            if (password !== confirmPassword) {
-                confirmPasswordError.textContent = 'Passwords do not match!';
-                return;
-            } else {
-                confirmPasswordError.textContent = '';
-            }
-
-            // Here you can add code to send the form data to the server
-            signup();
-
-        
+            signIn();
         });
 
         document.getElementById('password').addEventListener('focus', function () {

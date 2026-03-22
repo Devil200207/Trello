@@ -1,6 +1,7 @@
 require("dotenv").config();
+const path = require("path");
 const express = require("express");
-const {authmiddleare} = require("./middleware");
+const { authmiddleare } = require("./middleware");
 const jwt = require("jsonwebtoken");
 
 const app = express();
@@ -9,9 +10,14 @@ const secret = process.env.SECTER;
 
 const Users = [];
 const Organisation = [];
-const Task = []
+const Task = [];
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "frontend")));
+
+function orgsForUser(email) {
+    return Organisation.filter((org) => org.user.includes(email));
+}
 
 
 // ----------------------- auth apis ---------------------------------
@@ -46,44 +52,43 @@ app.post("/signin",(req,res)=>{
         return;
     }
 
-    const userOrg = Organisation.filter((org)=> org.user.find((user) =>{ user === email}));
+    const userOrg = orgsForUser(email);
 
     res.status(201).send({
-        message: "user signed up",
-        orglength: userOrg.length
+        message: "user signed in",
+        orglength: userOrg.length,
+        org: userOrg,
     });
-
 });
 
 
 // ---------------------------- org apis -----------------------------------
 
-app.post("/userOrg",(req,res)=>{
-    const email = req.body.email;
-    const existingUser = Users.find((user)=> user.email === email && user.password === password);
-    if(!existingUser)
-    {
+app.post("/userOrg", (req, res) => {
+    const { email, password } = req.body;
+    const existingUser = Users.find(
+        (user) => user.email === email && user.password === password
+    );
+    if (!existingUser) {
         res.status(400).send("user did not exist");
         return;
     }
 
-    const userOrg = Organisation.filter((org)=> org.user.find((user) =>{ user === email}));
+    const userOrg = orgsForUser(email);
 
     res.status(201).send({
-        message: "user signed up",
-        org: userOrg
+        message: "orgs for user",
+        org: userOrg,
     });
-})
+});
 
-
-app.post("org-login",(req,res)=>{
+app.post("/org-login", (req, res) => {
     const email = req.body.email;
     const orgid = req.body.orgid;
 
-    const existingUser = Users.find((user)=> user.email === email);
-    const org = Organisation.find(org => org.id === orgid);
-    if(!existingUser || !org)
-    {
+    const existingUser = Users.find((user) => user.email === email);
+    const org = Organisation.find((o) => o.id === orgid);
+    if (!existingUser || !org || !org.user.includes(email)) {
         res.status(400).send("Invalid data");
         return;
     }
@@ -96,50 +101,69 @@ app.post("org-login",(req,res)=>{
     const token = jwt.sign(data,secret);
 
     res.status(201).send({
-        token:token
+        token: token,
     });
-})
+});
 
-app.post("new-org",(req,res)=>{
-    const email = req.email;
-    const orgname = req.body.orgname;
-    const existingorg = Organisation.find(org => org.name === orgname);
-    if(existingorg)
-    {
+app.post("/new-org", (req, res) => {
+    const { email, orgname, description } = req.body;
+    if (!email || !orgname) {
+        res.status(400).send("email and orgname required");
+        return;
+    }
+    const existingUser = Users.find((user) => user.email === email);
+    if (!existingUser) {
+        res.status(400).send("user did not exist");
+        return;
+    }
+    const existingorg = Organisation.find((org) => org.name === orgname);
+    if (existingorg) {
         res.status(400).send("Organization already exists");
         return;
     }
 
     const neworg = {
-        id:new Date().toString(),
-        name:orgname,
-        user:[email]
+        id: String(Date.now()),
+        name: orgname,
+        description: description || "",
+        user: [email],
     };
 
     Organisation.push(neworg);
 
     res.status(201).send({
-        message:"Organization created successfully",
-        org:neworg
+        message: "Organization created successfully",
+        org: neworg,
     });
 });
 
-app.post("added-member",(req,res)=>{
+app.post("/added-member", (req, res) => {
     const {memberemail,orgid} = req.body;
 
-    const idx = Organisation.findIndex(org => org.id === orgid);
+    const idx = Organisation.findIndex((org) => org.id === orgid);
+    if (idx === -1) {
+        res.status(400).send("org not found");
+        return;
+    }
     Organisation[idx].user.push(memberemail);
 
     res.status(201).send({
-        message:"added user to org"
-    })
+        message: "added user to org",
+    });
 });
 
-
+app.get("/org", authmiddleare, (req, res) => {
+    const org = Organisation.find((o) => o.id === req.org);
+    if (!org) {
+        res.status(400).send("Invalid data");
+        return;
+    }
+    res.status(200).send({ org });
+});
 
 // --------------------- Task apis --------------------------------
 
-app.get("/task",authmiddleare,(req,res)=>{
+app.get("/task", authmiddleare, (req, res) => {
     const orgid = req.org;
 
     const existingorg = Organisation.find(org => org.id === orgid);
@@ -152,11 +176,11 @@ app.get("/task",authmiddleare,(req,res)=>{
     const all_task = Task.filter((t) => t.orgid === orgid);
 
     res.status(201).send({
-        task:all_task
-    })
-})
+        task: all_task,
+    });
+});
 
-app.post("new-task",authmiddleare,(req,res)=>{
+app.post("/new-task", authmiddleare, (req, res) => {
     const orgid = req.org;
     const {title,discription,status} = req.body;
 
@@ -168,11 +192,11 @@ app.post("new-task",authmiddleare,(req,res)=>{
     }
 
     const newtask = {
-        id:new Date().toString(),
+        id: String(Date.now()),
         orgid,
         title,
         discription,
-        status
+        status,
     };
 
     Task.push(newtask);
@@ -183,7 +207,7 @@ app.post("new-task",authmiddleare,(req,res)=>{
     })
 })
 
-app.patch("/task-move",authmiddleare,(req,res)=>{
+app.patch("/task-move", authmiddleare, (req, res) => {
     const orgid = req.org;
     const {id,status} = req.body;
 
@@ -194,20 +218,29 @@ app.patch("/task-move",authmiddleare,(req,res)=>{
         return;
     }
 
-    const idx = Task.findIndex(t => t.id === id);
+    const idx = Task.findIndex((t) => t.id === id);
+    if (idx === -1) {
+        res.status(400).send("task not found");
+        return;
+    }
     Task[idx].status = status;
 
     res.status(201).send({
-        message:"tasked moved successfully"
-    })
-})
+        message: "tasked moved successfully",
+    });
+});
 
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend", "index.html"));
+});
 
+app.get("/signin", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend", "signin.html"));
+});
 
-app.get("/signup",(req,res)=>{
-
-    res.sendFile("/Volumes/T7 Shield/pratics/trello/frontend/signup.html");
-})
+app.get("/signup", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend", "signup.html"));
+});
 
 
 app.listen(PORT,()=>{
