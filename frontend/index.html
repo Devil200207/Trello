@@ -4,160 +4,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>trello · workspace</title>
-    <link rel="stylesheet" href="/app.css">
+    <title>Sign in · trello</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        h2 {
+            margin: 0 0 1.25rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 0.875rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            box-sizing: border-box;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 0.5rem 0.875rem;
+            margin-top: 0.25rem;
+            background: #1f2937;
+            border: 1px solid #1f2937;
+            color: #fff;
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.92;
+        }
+
+        #message {
+            margin-top: 0.75rem;
+            text-align: center;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        .nav-foot {
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .nav-foot a {
+            color: #2563eb;
+        }
+    </style>
 </head>
 
 <body>
-    <header class="app-header">
-        <div>
-            <h1>trello <span class="sub">| atlassian</span></h1>
-            <div class="sub" id="header-context"></div>
-        </div>
-        <div class="header-actions">
-            <button type="button" class="btn ghost hidden" id="btn-back-dashboard">Dashboard</button>
-            <button type="button" class="btn ghost hidden" id="header-board">Create</button>
-            <button type="button" class="btn ghost hidden" id="header-org">Org</button>
-            <button type="button" class="btn ghost" id="btn-signout-header">Sign out</button>
-        </div>
-    </header>
-
-    <main>
-        <section class="view" data-view="auth">
-            <div class="panel">
-                <div class="tabs">
-                    <button type="button" class="active" id="tab-signin">Sign in</button>
-                    <button type="button" id="tab-signup">Sign up</button>
-                </div>
-                <form id="form-signin">
-                    <h2>Sign in</h2>
-                    <div class="field">
-                        <label for="signin-email">Email</label>
-                        <input type="email" id="signin-email" name="email" required autocomplete="username">
-                    </div>
-                    <div class="field">
-                        <label for="signin-password">Password</label>
-                        <input type="password" id="signin-password" name="password" required
-                            autocomplete="current-password">
-                    </div>
-                    <button type="submit" class="btn primary btn-block">Submit</button>
-                    <p class="msg" id="msg-signin"></p>
-                </form>
-                <form id="form-signup" class="hidden">
-                    <h2>Sign up</h2>
-                    <div class="field">
-                        <label for="signup-email">Email</label>
-                        <input type="email" id="signup-email" name="email" required autocomplete="username">
-                    </div>
-                    <div class="field">
-                        <label for="signup-password">Password</label>
-                        <input type="password" id="signup-password" name="password" required
-                            autocomplete="new-password">
-                    </div>
-                    <button type="submit" class="btn primary btn-block">Submit</button>
-                    <p class="msg" id="msg-signup"></p>
-                </form>
+    <div class="container">
+        <h2>Sign in</h2>
+        <form id="signinForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="username">
             </div>
-        </section>
-
-        <section class="view" data-view="onboarding">
-            <div class="panel">
-                <h2>Create your first org</h2>
-                <form id="form-onboard">
-                    <div class="field">
-                        <label for="onboard-name">Name</label>
-                        <input type="text" id="onboard-name" name="name" required>
-                    </div>
-                    <div class="field">
-                        <label for="onboard-desc">Description</label>
-                        <textarea id="onboard-desc" name="description" placeholder="Optional"></textarea>
-                    </div>
-                    <button type="submit" class="btn primary btn-block">Create org</button>
-                    <p class="msg" id="msg-onboard"></p>
-                </form>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
-        </section>
+            <button type="submit">Submit</button>
+        </form>
+        <p id="message"></p>
+        <p class="nav-foot">No account? <a href="signup.html">Sign up</a></p>
+    </div>
+    <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
 
-        <section class="view" data-view="dashboard">
-            <div class="panel wide">
-                <h2>Dashboard</h2>
-                <div class="header-actions" style="justify-content:flex-start;margin-bottom:1rem;">
-                    <button type="button" class="btn primary" id="btn-open-board">Open task board</button>
-                    <button type="button" class="btn" id="btn-open-org">Organization</button>
-                </div>
-                <div class="field" style="max-width:280px;">
-                    <label for="dashboard-org">Organization</label>
-                    <select id="dashboard-org"></select>
-                </div>
-                <p class="msg" id="msg-dashboard"></p>
-                <div class="board-grid">
-                    <button type="button" class="board-card" id="card-task-board" aria-label="Open task board">
-                        <div class="thumb"></div>
-                        <div class="label">Task board</div>
-                    </button>
-                </div>
-            </div>
-        </section>
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
+            }
+            return data;
+        }
 
-        <section class="view" data-view="board">
-            <div class="panel wide">
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
-                    <h2 style="margin:0;">Board</h2>
-                    <button type="button" class="btn primary" id="btn-create-task">Create</button>
-                </div>
-                <div id="create-task-panel" class="hidden" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
-                    <form id="form-new-task">
-                        <div class="field">
-                            <label for="task-title">Title</label>
-                            <input type="text" id="task-title" required>
-                        </div>
-                        <div class="field">
-                            <label for="task-desc">Description</label>
-                            <textarea id="task-desc" placeholder="Optional"></textarea>
-                        </div>
-                        <button type="submit" class="btn primary">Add task</button>
-                    </form>
-                </div>
-                <p class="msg" id="msg-board"></p>
-                <div class="kanban">
-                    <div class="column" id="col-up-next">
-                        <h3>Up next</h3>
-                    </div>
-                    <div class="column" id="col-in-progress">
-                        <h3>In progress</h3>
-                    </div>
-                    <div class="column" id="col-done">
-                        <h3>Done</h3>
-                    </div>
-                </div>
-            </div>
-        </section>
+        document.getElementById("signinForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const message = document.getElementById("message");
+            message.textContent = "";
+            message.classList.remove("error");
 
-        <section class="view" data-view="org">
-            <div class="panel wide">
-                <h2>Organization</h2>
-                <div class="org-layout">
-                    <div>
-                        <h3 class="sub" style="margin:0 0 0.5rem;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;">Members</h3>
-                        <div id="member-list"></div>
-                    </div>
-                    <div class="invite-panel">
-                        <h3>Invite</h3>
-                        <form id="form-invite">
-                            <div class="field">
-                                <label for="invite-email">Email</label>
-                                <input type="email" id="invite-email" required>
-                            </div>
-                            <button type="submit" class="btn primary btn-block">Invite</button>
-                        </form>
-                        <p class="msg" id="msg-org"></p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
 
-    <script src="/app.js"></script>
+            try {
+                const data = await api("/signin", {
+                    method: "POST",
+                    body: JSON.stringify({ email, password }),
+                });
+                localStorage.setItem(
+                    "trello_session",
+                    JSON.stringify({
+                        email,
+                        orgs: data.org || [],
+                        orglength: data.orglength ?? 0,
+                    })
+                );
+                localStorage.removeItem("trello_token");
+                localStorage.removeItem("trello_org_id");
+
+                const hasOrgs = data.org && data.org.length > 0;
+                window.location.href = hasOrgs ? "dashboard.html" : "onboarding.html";
+            } catch (err) {
+                message.textContent = err.message || "Sign in failed";
+                message.classList.add("error");
+            }
+        });
+    </script>
 </body>
 
 </html>

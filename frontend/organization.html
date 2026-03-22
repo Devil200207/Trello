@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization · trello</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            max-width: 720px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .header button {
+            font-size: 0.875rem;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font: inherit;
+        }
+
+        .container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 0 0 1rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr minmax(200px, 260px);
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        @media (max-width: 720px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            margin: 0 0 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6b7280;
+        }
+
+        .member-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.875rem;
+        }
+
+        .member-row:last-child {
+            border-bottom: none;
+        }
+
+        .invite {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1rem;
+            background: #fff;
+        }
+
+        .invite h3 {
+            margin: 0 0 0.625rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 0.875rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            box-sizing: border-box;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 0.5rem 0.875rem;
+            background: #1f2937;
+            border: 1px solid #1f2937;
+            color: #fff;
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.92;
+        }
+
+        #message {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>trello <span style="font-weight:400;color:#6b7280;font-size:0.875rem;">| organization</span></h1>
+        <div class="header-actions">
+            <button type="button" id="btnBoard">Board</button>
+            <button type="button" id="btnDashboard">Dashboard</button>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Organization</h2>
+        <div class="layout">
+            <div>
+                <h3 class="section-title">Members</h3>
+                <div id="memberList"></div>
+            </div>
+            <div class="invite">
+                <h3>Invite</h3>
+                <form id="formInvite">
+                    <div class="form-group">
+                        <label for="inviteEmail">Email</label>
+                        <input type="email" id="inviteEmail" required>
+                    </div>
+                    <button type="submit">Invite</button>
+                </form>
+                <p id="message"></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
+
+        function getSession() {
+            try {
+                return JSON.parse(localStorage.getItem("trello_session") || "null");
+            } catch (_) {
+                return null;
+            }
+        }
+
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const token = localStorage.getItem("trello_token");
+            if (token) headers.token = token;
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
+            }
+            return data;
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function setMsg(text, isError) {
+            const el = document.getElementById("message");
+            el.textContent = text || "";
+            el.classList.toggle("error", !!isError);
+        }
+
+        async function loadMembers() {
+            const list = document.getElementById("memberList");
+            list.innerHTML = "";
+            try {
+                const res = await api("/org", { method: "GET" });
+                const members = res.org && res.org.user ? res.org.user : [];
+                members.forEach(function (email) {
+                    const row = document.createElement("div");
+                    row.className = "member-row";
+                    row.innerHTML = "<span>" + escapeHtml(email) + "</span>";
+                    list.appendChild(row);
+                });
+            } catch (_) {
+                list.innerHTML = '<p class="error">Could not load members.</p>';
+            }
+        }
+
+        function init() {
+            const session = getSession();
+            const token = localStorage.getItem("trello_token");
+            if (!session || !session.email || !token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("btnDashboard").addEventListener("click", function () {
+                window.location.href = "dashboard.html";
+            });
+            document.getElementById("btnBoard").addEventListener("click", function () {
+                window.location.href = "board.html";
+            });
+
+            document.getElementById("formInvite").addEventListener("submit", async function (e) {
+                e.preventDefault();
+                setMsg("");
+                const memberemail = document.getElementById("inviteEmail").value.trim();
+                const orgid = localStorage.getItem("trello_org_id");
+                try {
+                    await api("/added-member", {
+                        method: "POST",
+                        body: JSON.stringify({ memberemail, orgid }),
+                    });
+                    document.getElementById("inviteEmail").value = "";
+                    await loadMembers();
+                } catch (err) {
+                    setMsg(err.message || "Invite failed", true);
+                }
+            });
+
+            loadMembers();
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+</body>
+
+</html>

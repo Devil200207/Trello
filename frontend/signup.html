@@ -2,226 +2,238 @@
 <html lang="en">
 
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup Form</title>
+    <title>Sign up · trello</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 1rem;
         }
 
         .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            max-width: 360px;
         }
 
         h2 {
-            margin-bottom: 20px;
+            margin: 0 0 1.25rem;
+            font-size: 1.125rem;
+            font-weight: 600;
             text-align: center;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 0.875rem;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
         }
 
         input {
             width: 100%;
-            padding: 8px;
+            padding: 0.5rem 0.625rem;
             box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
         }
 
-        button {
+        input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        button[type="submit"] {
             width: 100%;
-            padding: 10px;
-            background-color: #5cb85c;
-            border: none;
-            color: white;
-            border-radius: 4px;
+            padding: 0.5rem 0.875rem;
+            margin-top: 0.25rem;
+            background: #1f2937;
+            border: 1px solid #1f2937;
+            color: #fff;
+            border-radius: 6px;
+            font: inherit;
             cursor: pointer;
         }
 
-        button:hover {
-            background-color: #4cae4c;
+        button[type="submit"]:hover {
+            opacity: 0.92;
         }
 
         #message {
-            margin-top: 20px;
+            margin-top: 0.75rem;
             text-align: center;
+            font-size: 0.8125rem;
+            color: #6b7280;
         }
 
         .error {
-            color: red;
-            font-size: 0.9em;
+            color: #b91c1c;
+        }
+
+        .nav-foot {
+            margin-top: 1.25rem;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .nav-foot a {
+            color: #2563eb;
         }
 
         .password-hint {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.35rem;
             display: none;
         }
 
         .password-strength {
-            margin-top: 5px;
+            margin-top: 0.35rem;
         }
 
         .password-strength div {
-            height: 5px;
+            height: 4px;
             border-radius: 4px;
         }
 
         .weak {
             width: 33%;
-            background-color: red;
+            background-color: #ef4444;
         }
 
         .medium {
             width: 66%;
-            background-color: orange;
+            background-color: #f59e0b;
         }
 
         .strong {
             width: 100%;
-            background-color: green;
+            background-color: #22c55e;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2>Signup Form</h2>
+        <h2>Sign up</h2>
         <form id="signupForm">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" required autocomplete="username">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required autocomplete="new-password">
                 <div class="password-hint" id="passwordHint">
-                    Password must be at least 8 characters long, and include at
-                    least one uppercase letter, one lowercase letter, one
-                    number, and one special character.
+                    Use at least 8 characters with mixed case, numbers, and symbols.
                 </div>
                 <span id="passwordError" class="error"></span>
                 <div class="password-strength" id="passwordStrength"></div>
             </div>
             <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input type="password" id="confirmPassword"
-                    name="confirmPassword" required>
+                <label for="confirmPassword">Confirm password</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required
+                    autocomplete="new-password">
                 <span id="confirmPasswordError" class="error"></span>
             </div>
-            <button type="submit">Signup</button>
+            <button type="submit">Sign up</button>
         </form>
         <p id="message"></p>
+        <p class="nav-foot">Already have an account? <a href="index.html">Sign in</a></p>
     </div>
     <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
 
-        async function signup()
-        {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-
-            const responce = await axios.post("http://localhost:4000/signup",{
-                email,password
-            });
-
-            console.log(responce);
-
-            if(responce.status === 200)
-            {
-                window.location("/signup")
-
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
             }
-
-
-
-        }
-
-        document.getElementById('signupForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            let email = document.getElementById('email').value;
-            let password = document.getElementById('password').value;
-            let confirmPassword = document.getElementById('confirmPassword').value;
-            let message = document.getElementById('message');
-            let passwordError = document.getElementById('passwordError');
-            let confirmPasswordError = document.getElementById('confirmPasswordError');
-
-            // let passwordValid = validatePassword(password);
-            // if (!passwordValid) {
-            //     passwordError.textContent = 'Password does not meet the requirements.';
-            //     return;
-            // } else {
-            //     passwordError.textContent = '';
-            // }
-
-            if (password !== confirmPassword) {
-                confirmPasswordError.textContent = 'Passwords do not match!';
-                return;
-            } else {
-                confirmPasswordError.textContent = '';
-            }
-
-            // Here you can add code to send the form data to the server
-            signup();
-
-        
-        });
-
-        document.getElementById('password').addEventListener('focus', function () {
-            document.getElementById('passwordHint').style.display = 'block';
-        });
-
-        document.getElementById('password').addEventListener('blur', function () {
-            document.getElementById('passwordHint').style.display = 'none';
-        });
-
-        document.getElementById('password').addEventListener('input', function () {
-            let password = this.value;
-            let passwordStrength = document.getElementById('passwordStrength');
-            let strength = getPasswordStrength(password);
-
-            passwordStrength.innerHTML = ''; // Clear previous strength bars
-            if (strength) {
-                let strengthBar = document.createElement('div');
-                strengthBar.className = strength;
-                passwordStrength.appendChild(strengthBar);
-            }
-        });
-
-        function validatePassword(password) {
-            let regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            return regex.test(password);
+            return data;
         }
 
         function getPasswordStrength(password) {
-            if (password.length < 8) {
-                return 'weak';
-            }
-            if (password.match(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)) {
-                return 'strong';
-            }
-            return 'medium';
+            if (password.length < 8) return "weak";
+            if (password.match(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)) return "strong";
+            return "medium";
         }
+
+        document.getElementById("password").addEventListener("focus", function () {
+            document.getElementById("passwordHint").style.display = "block";
+        });
+        document.getElementById("password").addEventListener("blur", function () {
+            document.getElementById("passwordHint").style.display = "none";
+        });
+        document.getElementById("password").addEventListener("input", function () {
+            const passwordStrength = document.getElementById("passwordStrength");
+            const strength = getPasswordStrength(this.value);
+            passwordStrength.innerHTML = "";
+            if (this.value) {
+                const bar = document.createElement("div");
+                bar.className = strength;
+                passwordStrength.appendChild(bar);
+            }
+        });
+
+        document.getElementById("signupForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const message = document.getElementById("message");
+            const confirmPasswordError = document.getElementById("confirmPasswordError");
+            message.textContent = "";
+            message.classList.remove("error");
+            confirmPasswordError.textContent = "";
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (password !== confirmPassword) {
+                confirmPasswordError.textContent = "Passwords do not match.";
+                return;
+            }
+
+            try {
+                await api("/signup", {
+                    method: "POST",
+                    body: JSON.stringify({ email, password }),
+                });
+                message.textContent = "Account created. You can sign in.";
+                const home =
+                    window.location.protocol === "file:" ? "index.html" : "/";
+                setTimeout(function () {
+                    window.location.href = home;
+                }, 800);
+            } catch (err) {
+                message.textContent = err.message || "Signup failed";
+                message.classList.add("error");
+            }
+        });
     </script>
 </body>
 

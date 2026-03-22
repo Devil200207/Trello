@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard · trello</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            max-width: 720px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header button {
+            font-size: 0.875rem;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font: inherit;
+        }
+
+        .container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 0 0 1rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 0.875rem;
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #1f2937;
+        }
+
+        .btn:hover {
+            background: #f5f5f5;
+        }
+
+        .btn.primary {
+            background: #1f2937;
+            color: #fff;
+            border-color: #1f2937;
+        }
+
+        .btn.primary:hover {
+            opacity: 0.92;
+            background: #1f2937;
+        }
+
+        .form-group {
+            margin-bottom: 0.875rem;
+            max-width: 280px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
+            background: #fff;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        #message {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+
+        .board-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            padding: 0;
+            cursor: pointer;
+            text-align: left;
+            font: inherit;
+            color: inherit;
+            overflow: hidden;
+        }
+
+        .board-card .thumb {
+            aspect-ratio: 1;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .board-card .label {
+            padding: 0.625rem 0.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .board-card:hover {
+            border-color: #cbd5e1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>trello <span style="font-weight:400;color:#6b7280;font-size:0.875rem;">| workspace</span></h1>
+        <button type="button" id="btnSignOut">Sign out</button>
+    </div>
+    <div class="container">
+        <h2>Dashboard</h2>
+        <div class="tools">
+            <button type="button" class="btn primary" id="btnOpenBoard">Open task board</button>
+            <button type="button" class="btn" id="btnOpenOrg">Organization</button>
+        </div>
+        <div class="form-group">
+            <label for="orgSelect">Organization</label>
+            <select id="orgSelect"></select>
+        </div>
+        <p id="message"></p>
+        <div class="board-grid">
+            <button type="button" class="board-card" id="cardBoard" aria-label="Open task board">
+                <div class="thumb"></div>
+                <div class="label">Task board</div>
+            </button>
+        </div>
+    </div>
+    <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
+
+        function getSession() {
+            try {
+                return JSON.parse(localStorage.getItem("trello_session") || "null");
+            } catch (_) {
+                return null;
+            }
+        }
+
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const token = localStorage.getItem("trello_token");
+            if (token) headers.token = token;
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
+            }
+            return data;
+        }
+
+        async function ensureOrgToken(email, orgId) {
+            const res = await api("/org-login", {
+                method: "POST",
+                body: JSON.stringify({ email, orgid: orgId }),
+            });
+            localStorage.setItem("trello_token", res.token);
+            localStorage.setItem("trello_org_id", orgId);
+        }
+
+        function fillOrgSelect(selectEl, orgs, selectedId) {
+            selectEl.innerHTML = "";
+            (orgs || []).forEach(function (org) {
+                const opt = document.createElement("option");
+                opt.value = org.id;
+                opt.textContent = org.name;
+                selectEl.appendChild(opt);
+            });
+            if (selectedId && orgs && orgs.some(function (o) { return o.id === selectedId; })) {
+                selectEl.value = selectedId;
+            }
+        }
+
+        function setMsg(text, isError) {
+            const el = document.getElementById("message");
+            el.textContent = text || "";
+            el.classList.toggle("error", !!isError);
+        }
+
+        async function initPage() {
+            const session = getSession();
+            if (!session || !session.email) {
+                window.location.href = "index.html";
+                return;
+            }
+            if (!session.orgs || session.orgs.length === 0) {
+                window.location.href = "onboarding.html";
+                return;
+            }
+
+            const select = document.getElementById("orgSelect");
+            const saved = localStorage.getItem("trello_org_id");
+            fillOrgSelect(select, session.orgs, saved || session.orgs[0].id);
+            try {
+                await ensureOrgToken(session.email, select.value);
+            } catch (err) {
+                setMsg(err.message, true);
+            }
+
+            select.addEventListener("change", async function () {
+                try {
+                    await ensureOrgToken(session.email, select.value);
+                    setMsg("");
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
+
+            document.getElementById("btnOpenBoard").addEventListener("click", async function () {
+                try {
+                    await ensureOrgToken(session.email, select.value);
+                    window.location.href = "board.html";
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
+
+            document.getElementById("btnOpenOrg").addEventListener("click", async function () {
+                try {
+                    await ensureOrgToken(session.email, select.value);
+                    window.location.href = "organization.html";
+                } catch (err) {
+                    setMsg(err.message, true);
+                }
+            });
+
+            document.getElementById("cardBoard").addEventListener("click", function () {
+                document.getElementById("btnOpenBoard").click();
+            });
+        }
+
+        document.getElementById("btnSignOut").addEventListener("click", function () {
+            localStorage.removeItem("trello_session");
+            localStorage.removeItem("trello_token");
+            localStorage.removeItem("trello_org_id");
+            window.location.href = "index.html";
+        });
+
+        document.addEventListener("DOMContentLoaded", initPage);
+    </script>
+</body>
+
+</html>

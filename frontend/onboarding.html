@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create org · trello</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            max-width: 640px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header a,
+        .header button {
+            font-size: 0.875rem;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font: inherit;
+        }
+
+        .container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        h2 {
+            margin: 0 0 1rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 0.875rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            box-sizing: border-box;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 5rem;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 0.5rem 0.875rem;
+            margin-top: 0.25rem;
+            background: #1f2937;
+            border: 1px solid #1f2937;
+            color: #fff;
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            opacity: 0.92;
+        }
+
+        #message {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>trello <span style="font-weight:400;color:#6b7280;font-size:0.875rem;">| workspace</span></h1>
+        <button type="button" id="btnSignOut">Sign out</button>
+    </div>
+    <div class="container">
+        <h2>Create your first org</h2>
+        <form id="formOnboard">
+            <div class="form-group">
+                <label for="orgName">Name</label>
+                <input type="text" id="orgName" required>
+            </div>
+            <div class="form-group">
+                <label for="orgDesc">Description</label>
+                <textarea id="orgDesc" placeholder="Optional"></textarea>
+            </div>
+            <button type="submit">Create org</button>
+        </form>
+        <p id="message"></p>
+    </div>
+    <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
+
+        function getSession() {
+            try {
+                return JSON.parse(localStorage.getItem("trello_session") || "null");
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function setSession(s) {
+            localStorage.setItem("trello_session", JSON.stringify(s));
+        }
+
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
+            }
+            return data;
+        }
+
+        (function init() {
+            const session = getSession();
+            if (!session || !session.email) {
+                window.location.href = "index.html";
+                return;
+            }
+            if (session.orgs && session.orgs.length > 0) {
+                window.location.href = "dashboard.html";
+                return;
+            }
+        })();
+
+        document.getElementById("btnSignOut").addEventListener("click", function () {
+            localStorage.removeItem("trello_session");
+            localStorage.removeItem("trello_token");
+            localStorage.removeItem("trello_org_id");
+            window.location.href = "index.html";
+        });
+
+        document.getElementById("formOnboard").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const message = document.getElementById("message");
+            message.textContent = "";
+            message.classList.remove("error");
+
+            const session = getSession();
+            if (!session?.email) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            const orgname = document.getElementById("orgName").value.trim();
+            const description = document.getElementById("orgDesc").value.trim();
+
+            try {
+                const created = await api("/new-org", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        email: session.email,
+                        orgname,
+                        description,
+                    }),
+                });
+                const prev = session.orgs || [];
+                const orgs = [...prev, created.org].filter(Boolean);
+                setSession({
+                    ...session,
+                    orgs,
+                    orglength: orgs.length,
+                });
+                window.location.href = "dashboard.html";
+            } catch (err) {
+                message.textContent = err.message || "Could not create org";
+                message.classList.add("error");
+            }
+        });
+    </script>
+</body>
+
+</html>

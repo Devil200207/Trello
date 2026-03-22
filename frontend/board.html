@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board · trello</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #1f2937;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .header {
+            max-width: 720px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .header a,
+        .header button {
+            font-size: 0.875rem;
+            color: #2563eb;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font: inherit;
+        }
+
+        .container {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .toolbar h2 {
+            margin: 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 0.5rem 0.875rem;
+            border-radius: 6px;
+            font: inherit;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            color: #1f2937;
+        }
+
+        .btn:hover {
+            background: #f5f5f5;
+        }
+
+        .btn.primary {
+            background: #1f2937;
+            color: #fff;
+            border-color: #1f2937;
+        }
+
+        .btn.primary:hover {
+            opacity: 0.92;
+            background: #1f2937;
+        }
+
+        .btn.ghost {
+            border-color: transparent;
+            background: transparent;
+            color: #6b7280;
+            font-size: 0.6875rem;
+            padding: 0.2rem 0.45rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .create-panel {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 0.875rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8125rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            box-sizing: border-box;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 4rem;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        .task-actions select {
+            padding: 0.25rem 0.35rem;
+            font-size: 0.75rem;
+        }
+
+        #message {
+            margin-top: 0.75rem;
+            font-size: 0.8125rem;
+            color: #6b7280;
+        }
+
+        .error {
+            color: #b91c1c;
+        }
+
+        .kanban {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+            align-items: start;
+        }
+
+        @media (max-width: 720px) {
+            .kanban {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .column {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f5f5f5;
+            min-height: 180px;
+            padding: 0.625rem;
+        }
+
+        .column h3 {
+            margin: 0 0 0.5rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #6b7280;
+        }
+
+        .task-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            padding: 0.5rem 0.625rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8125rem;
+        }
+
+        .task-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .task-card .meta {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .task-actions {
+            margin-top: 0.375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>trello <span style="font-weight:400;color:#6b7280;font-size:0.875rem;">| board</span></h1>
+        <div class="header-actions">
+            <button type="button" id="btnCreateHeader">Create</button>
+            <button type="button" id="btnOrg">Organization</button>
+            <button type="button" id="btnDashboard">Dashboard</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="toolbar">
+            <h2>Board</h2>
+            <button type="button" class="btn primary" id="btnToggleCreate">Create</button>
+        </div>
+        <div id="createPanel" class="create-panel hidden">
+            <form id="formNewTask">
+                <div class="form-group">
+                    <label for="taskTitle">Title</label>
+                    <input type="text" id="taskTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDesc">Description</label>
+                    <textarea id="taskDesc" placeholder="Optional"></textarea>
+                </div>
+                <button type="submit" class="btn primary">Add task</button>
+            </form>
+        </div>
+        <p id="message"></p>
+        <div class="kanban">
+            <div class="column" id="colUpNext">
+                <h3>Up next</h3>
+            </div>
+            <div class="column" id="colInProgress">
+                <h3>In progress</h3>
+            </div>
+            <div class="column" id="colDone">
+                <h3>Done</h3>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE =
+            window.location.protocol === "file:" ? "http://localhost:4000" : "";
+        const STATUS_UP_NEXT = "up next";
+        const STATUS_IN_PROGRESS = "in progress";
+        const STATUS_DONE = "done";
+
+        function getSession() {
+            try {
+                return JSON.parse(localStorage.getItem("trello_session") || "null");
+            } catch (_) {
+                return null;
+            }
+        }
+
+        async function api(path, options) {
+            const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+            const token = localStorage.getItem("trello_token");
+            if (token) headers.token = token;
+            const res = await fetch(API_BASE + path, { ...options, headers });
+            const text = await res.text();
+            let data = text;
+            try {
+                data = text ? JSON.parse(text) : null;
+            } catch (_) { /* plain text */ }
+            if (!res.ok) {
+                const msg =
+                    typeof data === "string" ? data : data?.message || res.statusText;
+                throw new Error(msg);
+            }
+            return data;
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function setMsg(text, isError) {
+            const el = document.getElementById("message");
+            el.textContent = text || "";
+            el.classList.toggle("error", !!isError);
+        }
+
+        async function loadTasks() {
+            const cols = {
+                [STATUS_UP_NEXT]: document.getElementById("colUpNext"),
+                [STATUS_IN_PROGRESS]: document.getElementById("colInProgress"),
+                [STATUS_DONE]: document.getElementById("colDone"),
+            };
+            Object.keys(cols).forEach(function (k) {
+                const el = cols[k];
+                el.querySelectorAll(".task-card").forEach(function (n) {
+                    n.remove();
+                });
+            });
+
+            const res = await api("/task", { method: "GET" });
+            const tasks = res.task || [];
+            tasks.forEach(function (t) {
+                const col = cols[t.status] || cols[STATUS_UP_NEXT];
+                const card = document.createElement("div");
+                card.className = "task-card";
+                const move =
+                    t.status === STATUS_DONE
+                        ? '<span class="btn ghost">done</span>'
+                        : '<select class="task-move" aria-label="Move task">' +
+                          '<option value="" disabled selected>Move…</option>' +
+                          '<option value="' +
+                          STATUS_UP_NEXT +
+                          '">Up next</option>' +
+                          '<option value="' +
+                          STATUS_IN_PROGRESS +
+                          '">In progress</option>' +
+                          '<option value="' +
+                          STATUS_DONE +
+                          '">Done</option></select>';
+                card.innerHTML =
+                    "<div>" +
+                    escapeHtml(t.title) +
+                    "</div>" +
+                    (t.discription
+                        ? '<div class="meta">' + escapeHtml(t.discription) + "</div>"
+                        : "") +
+                    '<div class="task-actions">' +
+                    move +
+                    "</div>";
+                const sel = card.querySelector(".task-move");
+                if (sel) {
+                    sel.addEventListener("change", async function () {
+                        const status = sel.value;
+                        if (!status) return;
+                        try {
+                            await api("/task-move", {
+                                method: "PATCH",
+                                body: JSON.stringify({ id: t.id, status }),
+                            });
+                            await loadTasks();
+                        } catch (_) {
+                            sel.selectedIndex = 0;
+                        }
+                    });
+                }
+                col.appendChild(card);
+            });
+        }
+
+        function init() {
+            const session = getSession();
+            const token = localStorage.getItem("trello_token");
+            if (!session || !session.email || !token) {
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("btnToggleCreate").addEventListener("click", function () {
+                document.getElementById("createPanel").classList.toggle("hidden");
+            });
+            document.getElementById("btnCreateHeader").addEventListener("click", function () {
+                document.getElementById("createPanel").classList.toggle("hidden");
+            });
+            document.getElementById("btnDashboard").addEventListener("click", function () {
+                window.location.href = "dashboard.html";
+            });
+            document.getElementById("btnOrg").addEventListener("click", function () {
+                window.location.href = "organization.html";
+            });
+
+            document.getElementById("formNewTask").addEventListener("submit", async function (e) {
+                e.preventDefault();
+                setMsg("");
+                const title = document.getElementById("taskTitle").value.trim();
+                const discription = document.getElementById("taskDesc").value.trim();
+                try {
+                    await api("/new-task", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            title,
+                            discription,
+                            status: STATUS_UP_NEXT,
+                        }),
+                    });
+                    document.getElementById("taskTitle").value = "";
+                    document.getElementById("taskDesc").value = "";
+                    await loadTasks();
+                } catch (err) {
+                    setMsg(err.message || "Could not create task", true);
+                }
+            });
+
+            loadTasks().catch(function () {
+                window.location.href = "dashboard.html";
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+</body>
+
+</html>
